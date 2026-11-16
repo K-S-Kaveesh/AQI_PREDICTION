@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML-Based AQI Prediction & Environmental Assessment</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="viewport-wrapper">
+    <!-- Top Navigation -->
+    <header class="top-nav">
+      <div class="nav-title-group">
+        <div class="live-dot"></div>
+        <div>
+          <h1>Machine Learning-Based AQI Prediction</h1>
+          <p class="nav-sub">Predicting Air Quality Index and Pollution Categories from Environmental Parameters</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <!-- Theme Switcher -->
+        <div class="theme-switch-group">
+          <button type="button" class="theme-btn" data-theme-val="light" onclick="setTheme('light')" title="Light Mode">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+          <button type="button" class="theme-btn active" data-theme-val="dark" onclick="setTheme('dark')" title="Dark Mode">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button type="button" class="theme-btn" data-theme-val="system" onclick="setTheme('system')" title="System Sync">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </button>
+        </div>
+
+        <button type="button" class="btn-action" onclick="window.print()" title="Print / Save PDF">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Export PDF</span>
+        </button>
+        <button type="button" class="btn-action" onclick="copyReport()" id="btnCopyReport" title="Copy Assessment">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="dashboard-grid">
+      
+      <!-- LEFT PANEL: Inputs & Categories Matrix -->
+      <section class="panel panel-input">
+        <div class="panel-head">
+          <div class="tab-pills">
+            <button type="button" class="tab-pill active" onclick="switchMode('sliders')">Sliders</button>
+            <button type="button" class="tab-pill" onclick="switchMode('manual')">Manual Entry</button>
+            <button type="button" class="tab-pill" onclick="switchMode('dataset')">Dataset Upload</button>
+          </div>
+          
+          <div class="quick-presets" id="presetsBar">
+            <button type="button" class="preset-tag" onclick="loadPreset('clean')">Clean Forest</button>
+            <button type="button" class="preset-tag" onclick="loadPreset('urban')">Moderate Urban</button>
+            <button type="button" class="preset-tag" onclick="loadPreset('smog')">Heavy Smog</button>
+          </div>
+        </div>
+
+        <div class="panel-body">
+          <!-- MODE 1: Sliders -->
+          <div id="mode-sliders" class="mode-view active">
+            <div class="compact-sliders">
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <span class="param-name">PM2.5 <small>(µg/m³)</small></span>
+                  <span class="param-val" id="pm25_s_val">35.0</span>
+                </div>
+                <input type="range" id="pm25_s" min="0" max="450" step="1" value="35" oninput="syncParam('pm25', this.value, 'slider')">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <span class="param-name">PM10 <small>(µg/m³)</small></span>
+                  <span class="param-val" id="pm10_s_val">70.0</span>
+                </div>
+                <input type="range" id="pm10_s" min="0" max="550" step="1" value="70" oninput="syncParam('pm10', this.value, 'slider')">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <span class="param-name">NO₂ <small>(µg/m³)</small></span>
+                  <span class="param-val" id="no2_s_val">24.0</span>
+                </div>
+                <input type="range" id="no2_s" min="0" max="250" step="1" value="24" oninput="syncParam('no2', this.value, 'slider')">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <span class="param-name">SO₂ <small>(µg/m³)</small></span>
+                  <span class="param-val" id="so2_s_val">12.0</span>
+                </div>
+                <input type="range" id="so2_s" min="0" max="180" step="1" value="12" oninput="syncParam('so2', this.value, 'slider')">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-meta">
+                  <span class="param-name">CO <small>(mg/m³)</small></span>
+                  <span class="param-val" id="co_s_val">0.80</span>
+                </div>
+                <input type="range" id="co_s" min="0" max="20" step="0.05" value="0.8" oninput="syncParam('co', this.value, 'slider')">
+              </div>
+
+              <div class="dual-row">
+                <div class="slider-row">
+                  <div class="slider-meta">
+                    <span class="param-name">Temp <small>(°C)</small></span>
+                    <span class="param-val" id="temp_s_val">28.0</span>
+                  </div>
+                  <input type="range" id="temp_s" min="-5" max="50" step="0.5" value="28" oninput="syncParam('temp', this.value, 'slider')">
+                </div>
+                <div class="slider-row">
+                  <div class="slider-meta">
+                    <span class="param-name">Humidity <small>(%)</small></span>
+                    <span class="param-val" id="humidity_s_val">55.0</span>
+                  </div>
+                  <input type="range" id="humidity_s" min="5" max="100" step="1" value="55" oninput="syncParam('humidity', this.value, 'slider')">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE 2: Manual Entry -->
+          <div id="mode-manual" class="mode-view">
+            <div class="manual-inputs-grid">
+              <div class="form-group">
+                <label>PM2.5 (µg/m³)</label>
+                <input type="number" id="pm25" step="0.1" min="0" value="35.0" oninput="syncParam('pm25', this.value, 'manual')">
+              </div>
+              <div class="form-group">
+                <label>PM10 (µg/m³)</label>
+                <input type="number" id="pm10" step="0.1" min="0" value="70.0" oninput="syncParam('pm10', this.value, 'manual')">
+              </div>
+              <div class="form-group">
+                <label>NO₂ (µg/m³)</label>
+                <input type="number" id="no2" step="0.1" min="0" value="24.0" oninput="syncParam('no2', this.value, 'manual')">
+              </div>
+              <div class="form-group">
+                <label>SO₂ (µg/m³)</label>
+                <input type="number" id="so2" step="0.1" min="0" value="12.0" oninput="syncParam('so2', this.value, 'manual')">
+              </div>
+              <div class="form-group">
+                <label>CO (mg/m³)</label>
+                <input type="number" id="co" step="0.01" min="0" value="0.80" oninput="syncParam('co', this.value, 'manual')">
+              </div>
+              <div class="form-group">
+                <label>Temperature (°C)</label>
+                <input type="number" id="temp" step="0.1" value="28.0" oninput="syncParam('temp', this.value, 'manual')">
+              </div>
+              <div class="form-group full-width">
+                <label>Relative Humidity (%)</label>
+                <input type="number" id="humidity" step="0.1" min="0" max="100" value="55.0" oninput="syncParam('humidity', this.value, 'manual')">
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE 3: Dataset File Upload -->
+          <div id="mode-dataset" class="mode-view">
+            <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <h4>Click to browse CSV dataset</h4>
+              <p>Supports PM2.5, PM10, NO2, SO2, CO, Temp, Humidity</p>
+              <input type="file" id="fileInput" accept=".csv" style="display:none" onchange="processCSVFile(event)">
+            </div>
+            <div class="drop-actions">
+              <button type="button" class="btn-text-action" onclick="downloadTemplateCSV()">Download Template CSV</button>
+            </div>
+            <div id="batchStats" class="batch-box" style="display:none;">
+              <div class="batch-col"><small>Records</small><strong id="bCount">0</strong></div>
+              <div class="batch-col"><small>Avg AQI</small><strong id="bMean">0</strong></div>
+              <div class="batch-col"><small>Dominant</small><strong id="bDom">--</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 Rows x 3 Columns CPCB Categories Matrix -->
+        <div class="panel-foot">
+          <div class="categories-matrix">
+            <div class="cat-card cat-good" id="card-Good">
+              <span class="cat-tag-title">Good</span>
+              <span class="cat-tag-range">0 – 50</span>
+            </div>
+            <div class="cat-card cat-sat" id="card-Satisfactory">
+              <span class="cat-tag-title">Satisfactory</span>
+              <span class="cat-tag-range">51 – 100</span>
+            </div>
+            <div class="cat-card cat-mod" id="card-Moderate">
+              <span class="cat-tag-title">Moderate</span>
+              <span class="cat-tag-range">101 – 200</span>
+            </div>
+            <div class="cat-card cat-poor" id="card-Poor">
+              <span class="cat-tag-title">Poor</span>
+              <span class="cat-tag-range">201 – 300</span>
+            </div>
+            <div class="cat-card cat-vpoor" id="card-VeryPoor">
+              <span class="cat-tag-title">Very Poor</span>
+              <span class="cat-tag-range">301 – 400</span>
+            </div>
+            <div class="cat-card cat-sev" id="card-Severe">
+              <span class="cat-tag-title">Severe</span>
+              <span class="cat-tag-range">401 – 500</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT PANEL: Speedometer & Smart Suggestions -->
+      <section class="panel panel-result">
+        
+        <!-- Clean Speedometer (No bleeding lines or stray arrows) -->
+        <div class="gauge-card">
+          <div class="gauge-container">
+            <svg class="speedo-svg" viewBox="0 0 240 130">
+              <!-- Background Arc -->
+              <path class="gauge-bg" d="M 28 120 A 92 92 0 0 1 212 120" fill="none" stroke-width="16" stroke-linecap="round"/>
+              <!-- Colored Fill Arc -->
+              <path id="gaugeProgress" class="gauge-fill" d="M 28 120 A 92 92 0 0 1 212 120" fill="none" stroke-width="16" stroke-linecap="round"/>
+            </svg>
+
+            <!-- Centered Numeric Reading -->
+            <div class="gauge-readout">
+              <span class="readout-aqi" id="aqiNumber">--</span>
+              <span class="readout-category" id="catBadge">CALCULATING</span>
+            </div>
+          </div>
+
+          <!-- Color Spectrum Track -->
+          <div class="spectrum-track">
+            <div class="spectrum-bar"></div>
+            <div class="spectrum-cursor" id="spectrumCursor"></div>
+          </div>
+        </div>
+
+        <!-- NEW DESIGN: Actionable Suggestions & Precautions -->
+        <div class="suggestions-card">
+          <div class="sugg-header">
+            <span class="sugg-title">Recommended Actions & Precautions</span>
+            <span class="dominant-pill" id="dominantBadge">Main: PM2.5</span>
+          </div>
+
+          <div class="sugg-grid">
+            <!-- Tip 1: Mask / Gear -->
+            <div class="sugg-item">
+              <div class="sugg-icon-box" id="iconBox1">😷</div>
+              <div class="sugg-text">
+                <span class="sugg-label">Outdoor Mask</span>
+                <p class="sugg-desc" id="suggMask">No mask required.</p>
+              </div>
+            </div>
+
+            <!-- Tip 2: Exercise -->
+            <div class="sugg-item">
+              <div class="sugg-icon-box" id="iconBox2">🏃</div>
+              <div class="sugg-text">
+                <span class="sugg-label">Outdoor Activity</span>
+                <p class="sugg-desc" id="suggExercise">Safe for normal activity.</p>
+              </div>
+            </div>
+
+            <!-- Tip 3: Ventilation -->
+            <div class="sugg-item">
+              <div class="sugg-icon-box" id="iconBox3">🪟</div>
+              <div class="sugg-text">
+                <span class="sugg-label">Home Ventilation</span>
+                <p class="sugg-desc" id="suggVent">Open windows for clean air.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Health Impact Advisory Banner -->
+        <div class="advisory-card">
+          <div class="advisory-dot" id="advisoryDot"></div>
+          <div class="advisory-content">
+            <h5 id="advisoryHeading">Health Impact Assessment</h5>
+            <p id="advisoryBody">Evaluating environmental parameters...</p>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
